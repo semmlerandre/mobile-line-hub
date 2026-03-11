@@ -12,16 +12,19 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const systemName = (() => {
+  const cfg = (() => {
     try {
-      const cfg = localStorage.getItem('system-config');
-      return cfg ? JSON.parse(cfg).nomeDoSistema : 'Controle de Linhas Móveis';
-    } catch { return 'Controle de Linhas Móveis'; }
+      const raw = localStorage.getItem('system-config');
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
   })();
+
+  const systemName = cfg.nomeDoSistema || 'Controle de Linhas Móveis';
+  const logoUrl = cfg.logoUrl || '';
+  const loginBgUrl = cfg.loginBgUrl || '';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Demo accounts
     const accounts: Record<string, { password: string; role: string; name: string }> = {
       'admin@empresa.com': { password: 'admin123', role: 'admin', name: 'Administrador' },
       'ti@empresa.com': { password: 'ti123', role: 'ti', name: 'Usuário TI' },
@@ -38,12 +41,25 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-sidebar p-4">
-      <Card className="w-full max-w-md border-sidebar-border">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundColor: loginBgUrl ? undefined : 'hsl(var(--sidebar-background))',
+        backgroundImage: loginBgUrl ? `url(${loginBgUrl})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {loginBgUrl && <div className="absolute inset-0 bg-black/50" />}
+      <Card className="w-full max-w-md border-sidebar-border relative z-10">
         <CardHeader className="text-center space-y-4 pb-2">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
-            <Smartphone className="w-8 h-8 text-primary-foreground" />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="mx-auto max-h-16 object-contain" />
+          ) : (
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
+              <Smartphone className="w-8 h-8 text-primary-foreground" />
+            </div>
+          )}
           <div>
             <h1 className="text-2xl font-bold text-foreground">{systemName}</h1>
             <p className="text-sm text-muted-foreground mt-1">Faça login para acessar o sistema</p>

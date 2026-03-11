@@ -87,6 +87,41 @@ export interface Movimentacao {
 export interface SystemConfig {
   nomeDoSistema: string;
   logoUrl: string;
+  loginBgUrl: string;
+  primaryColor: string;
+}
+
+export const defaultConfig: SystemConfig = {
+  nomeDoSistema: 'Controle de Linhas Móveis',
+  logoUrl: '',
+  loginBgUrl: '',
+  primaryColor: '#0891b2',
+};
+
+export function applyPrimaryColor(hex: string) {
+  if (!hex) return;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Convert to HSL
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case rn: h = ((gn - bn) / d + (gn < bn ? 6 : 0)) * 60; break;
+      case gn: h = ((bn - rn) / d + 2) * 60; break;
+      case bn: h = ((rn - gn) / d + 4) * 60; break;
+    }
+  }
+  const hsl = `${h.toFixed(1)} ${(s * 100).toFixed(1)}% ${(l * 100).toFixed(1)}%`;
+  document.documentElement.style.setProperty('--primary', hsl);
+  document.documentElement.style.setProperty('--ring', hsl);
+  document.documentElement.style.setProperty('--sidebar-primary', hsl);
+  document.documentElement.style.setProperty('--sidebar-ring', hsl);
 }
 
 function getStorage<T>(key: string, defaultValue: T): T {
