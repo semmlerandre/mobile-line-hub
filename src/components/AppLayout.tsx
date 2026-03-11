@@ -33,12 +33,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } catch { return null; }
   })();
 
-  const systemName = (() => {
+  const cfg = (() => {
     try {
-      const cfg = localStorage.getItem('system-config');
-      return cfg ? JSON.parse(cfg).nomeDoSistema : 'Controle de Linhas';
-    } catch { return 'Controle de Linhas'; }
+      const raw = localStorage.getItem('system-config');
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
   })();
+
+  const systemName = cfg.nomeDoSistema || 'Controle de Linhas';
+  const logoUrl = cfg.logoUrl || '';
+
+  useEffect(() => {
+    if (cfg.primaryColor) applyPrimaryColor(cfg.primaryColor);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
