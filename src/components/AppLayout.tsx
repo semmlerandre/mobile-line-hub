@@ -73,9 +73,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}>
         {/* Logo area */}
         <div className="h-16 flex items-center px-4 border-b border-sidebar-border gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <Phone className="w-4 h-4 text-primary-foreground" />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+              <Phone className="w-4 h-4 text-primary-foreground" />
+            </div>
+          )}
           {!collapsed && <span className="font-bold text-sm truncate text-sidebar-primary-foreground">{systemName}</span>}
         </div>
 
