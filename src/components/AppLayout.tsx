@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Phone, Cpu, Smartphone, Users, FileText, Building2, DollarSign,
   BarChart3, Settings, LogOut, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { applyPrimaryColor } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
@@ -32,12 +33,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } catch { return null; }
   })();
 
-  const systemName = (() => {
+  const cfg = (() => {
     try {
-      const cfg = localStorage.getItem('system-config');
-      return cfg ? JSON.parse(cfg).nomeDoSistema : 'Controle de Linhas';
-    } catch { return 'Controle de Linhas'; }
+      const raw = localStorage.getItem('system-config');
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
   })();
+
+  const systemName = cfg.nomeDoSistema || 'Controle de Linhas';
+  const logoUrl = cfg.logoUrl || '';
+
+  useEffect(() => {
+    if (cfg.primaryColor) applyPrimaryColor(cfg.primaryColor);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -65,9 +73,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}>
         {/* Logo area */}
         <div className="h-16 flex items-center px-4 border-b border-sidebar-border gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <Phone className="w-4 h-4 text-primary-foreground" />
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+              <Phone className="w-4 h-4 text-primary-foreground" />
+            </div>
+          )}
           {!collapsed && <span className="font-bold text-sm truncate text-sidebar-primary-foreground">{systemName}</span>}
         </div>
 
