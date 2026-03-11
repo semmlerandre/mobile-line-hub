@@ -3,7 +3,8 @@ import {
   LayoutDashboard, Phone, Cpu, Smartphone, Users, FileText, Building2, DollarSign,
   BarChart3, Settings, LogOut, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { applyPrimaryColor } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
