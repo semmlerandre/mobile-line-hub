@@ -1,12 +1,15 @@
 import { useState, useRef } from 'react';
-import { useStore, defaultConfig, applyPrimaryColor } from '@/lib/store';
-import type { SystemConfig } from '@/lib/store';
+import { useStore, defaultConfig, applyPrimaryColor, generateId, getSystemUsers, setSystemUsers } from '@/lib/store';
+import type { SystemConfig, SystemUser } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Settings, Upload, Trash2, Palette } from 'lucide-react';
+import { Settings, Upload, Trash2, Palette, UserPlus, Users, Lock, Ban, RotateCcw } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -34,10 +37,20 @@ const ConfiguracoesPage = () => {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
 
+  // User management
+  const [users, setUsers] = useState<SystemUser[]>(() => getSystemUsers());
+  const [showUserDialog, setShowUserDialog] = useState(false);
+  const [newUser, setNewUser] = useState({ email: '', name: '', password: '', role: 'ti' as SystemUser['role'] });
+
+  const saveUsers = (updated: SystemUser[]) => {
+    setUsers(updated);
+    setSystemUsers(updated);
+  };
+
   const handleSave = () => {
     setConfig(form);
     applyPrimaryColor(form.primaryColor);
-    toast.success('Configurações salvas! Recarregue para aplicar em todo o sistema.');
+    toast.success('Configurações salvas!');
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,10 +65,75 @@ const ConfiguracoesPage = () => {
   const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Imagem muito grande (máx 5MB)'); return; }
+    if (file.size > 50 * 1024 * 1024) { toast.error('Imagem muito grande (máx 50MB)'); return; }
     const dataUrl = await fileToDataUrl(file);
     setForm({ ...form, loginBgUrl: dataUrl });
     toast.success('Imagem de fundo carregada');
+  };
+
+  const handleCreateUser = () => {
+    if (!newUser.email || !newUser.name || !newUser.password) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    if (newUser.password.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    if (users.some(u => u.email === newUser.email)) {
+      toast.error('E-mail já cadastrado');
+      return;
+    }
+    const user: SystemUser = {
+      id: generateId(),
+      email: newUser.email,
+      name: newUser.name,
+      password: newUser.password,
+      role: newUser.role,
+      status: 'ativo',
+      mustChangePassword: true,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    saveUsers([...users, user]);
+    setNewUser({ email: '', name: '', password: '', role: 'ti' });
+    setShowUserDialog(false);
+    toast.success('Usuário criado! Ele deverá alterar a senha no primeiro acesso.');
+  };
+
+  const handleToggleBlock = (userId: string) => {
+    const updated = users.map(u =>
+      u.id === userId ? { ...u, status: (u.status === 'ativo' ? 'bloqueado' : 'ativo') as SystemUser['status'] } : u
+    );
+    saveUsers(updated);
+    const user = updated.find(u => u.id === userId);
+    toast.success(user?.status === 'bloqueado' ? 'Usuário bloqueado' : 'Usuário desbloqueado');
+  };
+
+  const handleResetPassword = (userId: string) => {
+    const defaultPass = 'mudar123';
+    const updated = users.map(u =>
+      u.id === userId ? { ...u, password: defaultPass, mustChangePassword: true } : u
+    );
+    saveUsers(updated);
+    toast.success(`Senha resetada para "${defaultPass}". O usuário deverá alterar no próximo acesso.`);
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (users.length <= 1) {
+      toast.error('Deve haver pelo menos um usuário no sistema');
+      return;
+    }
+    saveUsers(users.filter(u => u.id !== userId));
+    toast.success('Usuário excluído');
+  };
+
+  const roleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrador';
+      case 'ti': return 'TI';
+      case 'auditor': return 'Auditor';
+      default: return role;
+    }
   };
 
   return (
@@ -167,7 +245,7 @@ const ConfiguracoesPage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Imagem exibida como fundo na tela de login. Formatos: PNG, JPG. Máx: 5MB.
+            Imagem exibida como fundo na tela de login. Formatos: PNG, JPG. Máx: 50MB.
           </p>
           <input ref={bgInputRef} type="file" accept="image/*" onChange={handleBgUpload} className="hidden" />
           <div className="flex gap-3">
@@ -189,10 +267,97 @@ const ConfiguracoesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Save */}
+      {/* Save Config */}
       <div className="flex justify-end">
         <Button onClick={handleSave} size="lg">Salvar Configurações</Button>
       </div>
+
+      {/* User Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="w-5 h-5" />Gerenciamento de Usuários
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+            <DialogTrigger asChild>
+              <Button><UserPlus className="w-4 h-4 mr-2" />Novo Usuário</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Novo Usuário</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-1">
+                  <Label>Nome</Label>
+                  <Input value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })} placeholder="Nome completo" />
+                </div>
+                <div className="space-y-1">
+                  <Label>E-mail</Label>
+                  <Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} placeholder="email@empresa.com" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Senha Inicial</Label>
+                  <Input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="Mínimo 6 caracteres" />
+                  <p className="text-xs text-muted-foreground">O usuário será obrigado a alterar a senha no primeiro acesso.</p>
+                </div>
+                <div className="space-y-1">
+                  <Label>Perfil</Label>
+                  <Select value={newUser.role} onValueChange={v => setNewUser({ ...newUser, role: v as SystemUser['role'] })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="ti">TI</SelectItem>
+                      <SelectItem value="auditor">Auditor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleCreateUser} className="w-full">Criar Usuário</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="text-left p-3 font-medium">Nome</th>
+                  <th className="text-left p-3 font-medium">E-mail</th>
+                  <th className="text-left p-3 font-medium">Perfil</th>
+                  <th className="text-left p-3 font-medium">Status</th>
+                  <th className="text-right p-3 font-medium">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id} className="border-t">
+                    <td className="p-3">{u.name}</td>
+                    <td className="p-3 text-muted-foreground">{u.email}</td>
+                    <td className="p-3"><Badge variant="outline">{roleLabel(u.role)}</Badge></td>
+                    <td className="p-3">
+                      <Badge variant={u.status === 'ativo' ? 'default' : 'destructive'}>
+                        {u.status === 'ativo' ? 'Ativo' : 'Bloqueado'}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-right space-x-1">
+                      <Button variant="ghost" size="sm" onClick={() => handleResetPassword(u.id)} title="Resetar Senha">
+                        <RotateCcw className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleToggleBlock(u.id)} title={u.status === 'ativo' ? 'Bloquear' : 'Desbloquear'}>
+                        <Ban className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(u.id)} title="Excluir" className="text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-base">Sobre o Sistema</CardTitle></CardHeader>

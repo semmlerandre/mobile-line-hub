@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Smartphone } from 'lucide-react';
+import { getSystemUsers } from '@/lib/store';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('admin@empresa.com');
@@ -25,20 +26,34 @@ const LoginPage = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const accounts: Record<string, { password: string; role: string; name: string }> = {
-      'admin@empresa.com': { password: 'admin123', role: 'admin', name: 'Administrador' },
-      'ti@empresa.com': { password: 'ti123', role: 'ti', name: 'Usuário TI' },
-      'auditor@empresa.com': { password: 'auditor123', role: 'auditor', name: 'Auditor' },
-    };
+    const users = getSystemUsers();
+    const account = users.find(u => u.email === email);
 
-    const account = accounts[email];
-    if (account && account.password === password) {
-      localStorage.setItem('user', JSON.stringify({ email, role: account.role, name: account.name }));
-      navigate('/');
-    } else {
+    if (!account || account.password !== password) {
       setError('E-mail ou senha inválidos');
+      return;
+    }
+
+    if (account.status === 'bloqueado') {
+      setError('Sua conta está bloqueada. Contate o administrador.');
+      return;
+    }
+
+    localStorage.setItem('user', JSON.stringify({
+      email,
+      role: account.role,
+      name: account.name,
+      mustChangePassword: account.mustChangePassword,
+    }));
+
+    if (account.mustChangePassword) {
+      navigate('/alterar-senha');
+    } else {
+      navigate('/');
     }
   };
+
+  const users = getSystemUsers().filter(u => u.status === 'ativo');
 
   return (
     <div
@@ -79,10 +94,10 @@ const LoginPage = () => {
             <Button type="submit" className="w-full">Entrar</Button>
           </form>
           <div className="mt-6 p-3 rounded-md bg-muted text-xs text-muted-foreground space-y-1">
-            <p className="font-medium text-foreground">Contas de demonstração:</p>
-            <p>Admin: admin@empresa.com / admin123</p>
-            <p>TI: ti@empresa.com / ti123</p>
-            <p>Auditor: auditor@empresa.com / auditor123</p>
+            <p className="font-medium text-foreground">Contas disponíveis:</p>
+            {users.map(u => (
+              <p key={u.id}>{u.name}: {u.email} / {u.password}</p>
+            ))}
           </div>
         </CardContent>
       </Card>
