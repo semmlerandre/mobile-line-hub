@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -31,7 +32,31 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <AppLayout>{children}</AppLayout>;
 }
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('systemConfig');
+      if (raw) {
+        const config = JSON.parse(raw);
+        // Atualizar título da aba
+        if (config.nomeDoSistema) {
+          document.title = config.nomeDoSistema;
+        }
+        // Atualizar favicon com o logo
+        if (config.logoUrl) {
+          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = config.logoUrl;
+        }
+      }
+    } catch { /* noop */ }
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -56,6 +81,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

@@ -50,6 +50,20 @@ const ConfiguracoesPage = () => {
   const handleSave = () => {
     setConfig(form);
     applyPrimaryColor(form.primaryColor);
+    // Atualizar título da aba
+    if (form.nomeDoSistema) {
+      document.title = form.nomeDoSistema;
+    }
+    // Atualizar favicon com o logo
+    if (form.logoUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = form.logoUrl;
+    }
     toast.success('Configurações salvas!');
   };
 
