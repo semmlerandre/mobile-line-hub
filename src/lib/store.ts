@@ -91,6 +91,17 @@ export interface SystemConfig {
   primaryColor: string;
 }
 
+export interface SystemUser {
+  id: string;
+  email: string;
+  password: string;
+  name: string;
+  role: 'admin' | 'ti' | 'auditor';
+  status: 'ativo' | 'bloqueado';
+  mustChangePassword: boolean;
+  createdAt: string;
+}
+
 export const defaultConfig: SystemConfig = {
   nomeDoSistema: 'Controle de Linhas Móveis',
   logoUrl: '',
@@ -98,12 +109,17 @@ export const defaultConfig: SystemConfig = {
   primaryColor: '#0891b2',
 };
 
+export const DEFAULT_USERS: SystemUser[] = [
+  { id: '1', email: 'admin@empresa.com', password: 'admin123', name: 'Administrador', role: 'admin', status: 'ativo', mustChangePassword: false, createdAt: '2024-01-01' },
+  { id: '2', email: 'ti@empresa.com', password: 'ti123', name: 'Usuário TI', role: 'ti', status: 'ativo', mustChangePassword: false, createdAt: '2024-01-01' },
+  { id: '3', email: 'auditor@empresa.com', password: 'auditor123', name: 'Auditor', role: 'auditor', status: 'ativo', mustChangePassword: false, createdAt: '2024-01-01' },
+];
+
 export function applyPrimaryColor(hex: string) {
   if (!hex) return;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  // Convert to HSL
   const rn = r / 255, gn = g / 255, bn = b / 255;
   const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
   let h = 0, s = 0;
@@ -153,6 +169,15 @@ export function useStore<T>(key: string, defaultValue: T): [T, (val: T | ((prev:
 
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+}
+
+// Helper to get/set system users
+export function getSystemUsers(): SystemUser[] {
+  return getStorage<SystemUser[]>('system-users', DEFAULT_USERS);
+}
+
+export function setSystemUsers(users: SystemUser[]) {
+  setStorage('system-users', users);
 }
 
 // Demo data

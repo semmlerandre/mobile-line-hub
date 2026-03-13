@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "@/components/AppLayout";
 import LoginPage from "@/pages/Login";
+import AlterarSenhaPage from "@/pages/AlterarSenha";
 import DashboardPage from "@/pages/Dashboard";
 import LinhasPage from "@/pages/Linhas";
 import ChipsPage from "@/pages/Chips";
@@ -21,8 +22,12 @@ import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const user = localStorage.getItem('user');
-  if (!user) return <Navigate to="/login" replace />;
+  const raw = localStorage.getItem('user');
+  if (!raw) return <Navigate to="/login" replace />;
+  try {
+    const user = JSON.parse(raw);
+    if (user.mustChangePassword) return <Navigate to="/alterar-senha" replace />;
+  } catch { /* noop */ }
   return <AppLayout>{children}</AppLayout>;
 }
 
@@ -34,6 +39,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/alterar-senha" element={<AlterarSenhaPage />} />
           <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
           <Route path="/linhas" element={<RequireAuth><LinhasPage /></RequireAuth>} />
           <Route path="/chips" element={<RequireAuth><ChipsPage /></RequireAuth>} />
