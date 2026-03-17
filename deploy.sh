@@ -6,7 +6,7 @@ set -euo pipefail
 #  Compatível com Linux e macOS
 # ============================================================
 
-REPO_URL="https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git"
+REPO_URL="https://github.com/semmlerandre/mobile-line-hub.git"
 PROJECT_DIR="controle-linhas-moveis"
 PORT_RANGE_START=3000
 PORT_RANGE_END=9000
