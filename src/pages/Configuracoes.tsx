@@ -54,15 +54,17 @@ const ConfiguracoesPage = () => {
     if (form.nomeDoSistema) {
       document.title = form.nomeDoSistema;
     }
-    // Atualizar favicon com o logo
+    // Atualizar favicon com o logo (cache bust)
     if (form.logoUrl) {
-      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
-      link.href = form.logoUrl;
+      const oldLinks = document.querySelectorAll("link[rel='icon'], link[rel='shortcut icon']");
+      oldLinks.forEach(el => el.remove());
+      const link = document.createElement('link');
+      link.rel = 'icon';
+      link.type = 'image/png';
+      link.href = form.logoUrl.startsWith('data:') 
+        ? form.logoUrl 
+        : form.logoUrl + '?v=' + Date.now();
+      document.head.appendChild(link);
     }
     toast.success('Configurações salvas!');
   };
