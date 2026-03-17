@@ -35,7 +35,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 const App = () => {
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('systemConfig');
+      const raw = localStorage.getItem('system-config') ?? localStorage.getItem('systemConfig');
       if (raw) {
         const config = JSON.parse(raw);
         // Atualizar título da aba
