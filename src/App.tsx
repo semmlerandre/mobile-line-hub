@@ -44,13 +44,15 @@ const App = () => {
         }
         // Atualizar favicon com o logo
         if (config.logoUrl) {
-          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.head.appendChild(link);
-          }
-          link.href = config.logoUrl;
+          const oldLinks = document.querySelectorAll("link[rel='icon'], link[rel='shortcut icon']");
+          oldLinks.forEach(el => el.remove());
+          const link = document.createElement('link');
+          link.rel = 'icon';
+          link.type = 'image/png';
+          link.href = config.logoUrl.startsWith('data:') 
+            ? config.logoUrl 
+            : config.logoUrl + '?v=' + Date.now();
+          document.head.appendChild(link);
         }
       }
     } catch { /* noop */ }
